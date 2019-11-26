@@ -1,0 +1,25 @@
+language: python
+
+python:
+- '3.6'
+
+# services:
+# - docker
+
+before_install:
+- sudo apt-get install -y tor
+addons:
+  apt:
+    update: true  
+
+install:
+- pip3 install -r requirements.txt
+- python3 fetch_pubs.py ipeirotis
+- python3 fetch_pubs.py provost
+
+
+script: 
+- echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+- docker build -t ipeirotis/census .
+- docker push ipeirotis/census
+- python3 restart_vm.py
