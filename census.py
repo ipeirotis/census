@@ -222,10 +222,33 @@ class Census:
         
         return {**df.T[0].to_dict(), **block}
 
-    
+    def details_all_tracts(self, STATEFP, COUNTYFP):
+        
+        dataset='acs/acs5'
+        year='2017'
+
+        fields_of_interest = {
+            'B07001_017E': "Same_house_1_year_ago",
+            'B07001_001E': "Total_Population",
+            # https://api.census.gov/data/2017/acs/acs5/groups/B19127.html
+            'B19127_001E': "Aggregate_Income",             
+            'B19126_001E': "Median_Family_Income", 
+        }
+
+        # Geo query. We are going for the tract level
+        geo = [f"in=state:{STATEFP}", 
+               f"in=county:{COUNTYFP}",
+               f"for=tract:*"]
+
+        df = self.query_census_api(fields_of_interest, geo, dataset=dataset, year=year)
+        
+        # df = pd.DataFrame(census_response[1:], columns = census_response[0])
+        # df = df.rename(fields_of_interest, axis="columns")
+        
+        return df    
     
 
-    def query_census_api(self, fields_of_interest, geo, year='2018', dataset='acs'):
+    def query_census_api(self, fields_of_interest, geo, year='2018', dataset='acs', debug=False):
         fields = ['NAME'] + list(fields_of_interest.keys())
         
         base_url = f'https://api.census.gov/data/{year}/{dataset}?key={self.census_key}&get='
@@ -235,6 +258,8 @@ class Census:
         add_url = '&'.join(query)
         url = base_url + add_url
         response = requests.get(url)
+        if debug:
+            print(response.text)
         data = response.json()
         
         df = pd.DataFrame(data[1:], columns = data[0])
