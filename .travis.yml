@@ -1,25 +1,25 @@
 language: python
-
 python:
 - '3.6'
-
-# services:
-# - docker
+services:
+- docker
 
 before_install:
-- sudo apt-get install -y tor
+- openssl aes-256-cbc -K $encrypted_0a6446eb3ae3_key -iv $encrypted_0a6446eb3ae3_iv 
+  -in google-credentials.json.enc -out google-credentials.json
+  -d
+
 addons:
   apt:
-    update: true  
-
+    update: true
 install:
 - pip3 install -r requirements.txt
-- python3 fetch_pubs.py ipeirotis
-- python3 fetch_pubs.py provost
-
-
-script: 
+script:
 - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
 - docker build -t ipeirotis/census .
 - docker push ipeirotis/census
 - python3 restart_vm.py
+env:
+  global:
+  - secure: qdQlj3mScBo4Bs611rJ0DiIX7zbXeNgS6/lxU1/cqWiNjMvCy+Z0lgqrv8wo6bqpHJ5qO2c3oRpaeoFslk2qHVawYaVxon2OGvfNaT2R/l2n62TL11eHPsb2NC0zM6CQ0z+znP6fv9hhgDq4tWTdLM05gwmZqHvGAU7rz9PX8Zj77T6fOacznr7QgsEmJDq1TV035Ircte0RTyMm2JH532Z0h/zry1ypdycE6WnR7G+DZY0736+sMUfHTA7qWxtvkHoKC6blYlMXW7a7vKXbt4UoBH6AZy62Cf0wtw5f8ypNgGNufkpxYncRY54IH3Yy91iAi5h+lg5EU+P3DJqBf5sPCrt7C58ImbxUQyg/0qDywbqfe4HMqSgAq8i7n1mwnI/206SmEOKWLOMjs0PxKvHAVsnvFH5fbznJ3vnmnepnvZoOQMdGm+trlim1AQgYmHsMvVa7OmQD+yljXiwFjedjnvHvcq4yeQKlIHf97dxEPAIeuCtszJSi+sNzKYpTSgW42ZjQzI9urxwzVgQD8i7Euhp1oijsRWfvVQVks+/ak0JSTfrmtjH2LVpDG5T6l+3OjBuAYbbYnrNJTc78ejPR7pzJuwdr7Dx+liY/1ZEkWezDsky9+/sXy6f+f9ZwikPWTtNk0GirpYzdksvd2llgLTIxhJCX0cECufDHs28=
+  - secure: jnAY3UjQTs8HRKZv7rv92x7vbJb4wOZYpdpTXOoXqQilrkeawzsXalNLic5EfSoH3n2VxyFIMi6nTzmBQqKEjOUblEPAlyT3NGQwMwjVXT6Proi+lcKR0yHLltHq9OpanFwYiaFPvrcJs8Xs5kikRGnW26Fp3AcN7jaY8rOAPTHj8Sd0vkdA4ToOi/+vLrqDmCLPWnhcw568oMqHFEY0cbcXRpFv70+LfU816JDfpGA+RMVyRWyqXjT9LCBnFiraqSlqAYcKqthtmd2+tyAv7H6VXm+CwD7gxUPRmJOVmri06uStocoCd79GClh8f498bI1ulgaoyC8rNgEpkCpX67uYDKrsicndMwMySVQxs7ikV+HRAqDqy4dyHA7GyK/CjocvB71s6VxB8h2TpmfNoMVdoOhqIaZbA1tEuLcYkL59DcTW1XUZ90YY6eejaSQTIhos5gClPhQEC3tscM5gh8JKUpiNvDWWbK3mF0e68LgXL+nJkB4vRCpdCZErfF+Xs4vGUeA8MHMkBpWYxrWtSTU5eQ/fqgbO23lN2rcCm1enruo35PGXVN9aXBHjTIaeD79vMeaYp/E9i7IZgibWFXP12eT1NuHnkJn9IlEo9R6zrii/mMFt/e1G9wgM0Z1wwxVd/g9M7hS4ZCcfFQrUWnjfvagSSknzqYO1AsrQrzU=

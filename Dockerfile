@@ -28,7 +28,9 @@ COPY . /app
 
 WORKDIR /app
 
-ENV GOOGLE_MAPS_KEY=AIzaSyBAE61LB_i_rixBu3Xb-G2qWbEkNIJdMU8
+# Key is restricted to the Geocoding API and only to
+# the two IP addresses 3.90.198.216 and 35.212.72.29
+ENV GOOGLE_MAPS_KEY=AIzaSyDz90g6N1AeRb0n5foe1opZgoZq6scx660
 ENV CENSUS_KEY=627d4107b57d4576f2120d2b87b59c7440e5d2af
 
 EXPOSE 5000
