@@ -136,11 +136,72 @@ class GeoLocator:
 
 class Census:
     
+    # Full list at https://api.census.gov/data/2017/acs/acs5/variables.json
+    acs5_fields_of_interest = {
+        'B07001_001E': "Total_Population",
+        # B07013_002E: Estimate!!Total!!Householder lived in owner-occupied housing units
+        'B07013_002E': 'Owner',
+        # B07013_003E: Estimate!!Total!!Householder lived in renter-occupied housing units
+        'B07013_003E': 'Renter',
+        'B07001_017E': "Same_house_1_year_ago",
+        # B07013_005E: Estimate!!Total!!Same house 1 year ago!!Householder lived in owner-occupied housing units"
+        'B07013_005E': "Same_house_1_year_ago_owner",
+        # B07013_006E: Estimate!!Total!!Same house 1 year ago!!Householder lived in renter-occupied housing units
+        'B07013_006E': "Same_house_1_year_ago_renter",
+        # B19127_001: Estimate!!Aggregate family income in the past 12 months (in 2017 inflation-adjusted dollars)
+        'B19127_001E': "Aggregate_Income",             
+        'B19126_001E': "Median_Family_Income", 
+        'B25064_001E': 'Median_Gross_Rent',
+        'B25103_001E': 'Median_Eeal_Estate_Taxes',
+        # Estimate!!Gini Index
+        'B19083_001E': 'Gini_Index',
+      
+        # Income distribution: Cutoff values for quintiles
+        'B19080_001E': 'Household_Income_Lowest_Quintile_Upper_Limit',
+        'B19080_002E': 'Household_Income_Second_Quintile_Upper_Limit',
+        'B19080_003E': 'Household_Income_Third_Quintile_Upper_Limit',
+        'B19080_004E': 'Household_Income_Fourth_Quintile_Upper_Limit',
+        'B19080_005E': 'Household_Income_Top_5_Percent_Lower_Limit',
+        
+        # Woman fertility: Estimate!!Total!!Women who had a birth in the past 12 months
+        'B13016_002E': 'Women_Gave_Birth_Last_Year',
+        'B13016_010E': 'Women_No_Birth_Last_Year',
+        
+        # Tenure of living        
+
+        'B25038_015E': 'Renter_Moved_in_1979_or_earlier',
+        'B25038_014E': 'Renter_Moved_in_1980_to_1989',
+        'B25038_013E': 'Renter_Moved_in_1990_to_1999',
+        'B25038_012E': 'Renter_Moved_in_2000_to_2009',
+        'B25038_011E': 'Renter_Moved_in_2010_to_2014',
+        'B25038_010E': 'Renter_Moved_in_2015_or_later',
+        
+        'B25038_008E': 'Owner_Moved_in_1979_or_earlier',
+        'B25038_007E': 'Owner_Moved_in_1980_to_1989',
+        'B25038_006E': 'Owner_Moved_in_1990_to_1999',
+        'B25038_005E': 'Owner_Moved_in_2000_to_2009',
+        'B25038_004E': 'Owner_Moved_in_2010_to_2014',
+        'B25038_003E': 'Owner_Moved_in_2015_or_later',
+        
+        'B19019_002E': '1-person_households',
+        'B19019_003E': '2-person_households',
+        'B19019_004E': '3-person_households',
+        'B19019_005E': '4-person_households',
+        'B19019_006E': '5-person_households',
+        'B19019_007E': '6-person_households',
+        'B19019_008E': '7-or-more-person_households',        
+        
+    }
+
+    
     def __init__(self, census_key, google_key, service='GOOGLE'):
         self.census_key = census_key
         self.google_key = google_key
         self.geolocator = GeoLocator(google_key)
         
+    # We will eventually depracate this. The decentennial census gives detailed
+    # information at the block level (high degree of granularity) but it does
+    # not offer too many variables that we can use.
     def details_block_level(self, address):
         
         block = self.geolocator.get_census_block(address)      
@@ -172,13 +233,9 @@ class Census:
             'H013007': "6_person_household",
             'H013008': "7plus_person_household",
 
+
             
         }
-
-        # Fetch state renter/owner data from US Census
-        # Group H4: https://api.census.gov/data/2010/dec/sf1/groups/H4.html
-
-        fields = ['NAME'] + list(fields_of_interest.keys())
 
         # Geo query. We are going for the block level, no wildcards
         geo = [f"in=state:{block['STATEFP']}", 
@@ -188,38 +245,31 @@ class Census:
         
         df = self.query_census_api(fields_of_interest, geo, dataset=dataset, year=year)
         
-        # df = pd.DataFrame(census_response[1:], columns = census_response[0])
-        # df = df.rename(fields_of_interest, axis="columns")
-        
         return {**df.T[0].to_dict(), **block}
     
-    
+    def add_computed_variables(self, df):
+        df["prob_owner"] = df["Owner"]/df["Total_Population"]
+        df["prob_renter"] = df["Renter"]/df["Total_Population"]
+        df["prob_move"] = 1-df["Same_house_1_year_ago"]/df["Total_Population"]
+        df["prob_move_owner"] = 1-df["Same_house_1_year_ago_owner"]/df["Owner"]
+        df["prob_move_renter"] = 1-df["Same_house_1_year_ago_renter"]/df["Renter"]
+        return df
+        
         
     def details_tract_level(self, address):
         
         block = self.geolocator.get_census_block(address)      
-
         dataset='acs/acs5'
         year='2017'
-
-        fields_of_interest = {
-            'B07001_017E': "Same_house_1_year_ago",
-            'B07001_001E': "Total_Population",
-            # https://api.census.gov/data/2017/acs/acs5/groups/B19127.html
-            'B19127_001E': "Aggregate_Income",             
-            'B19126_001E': "Median_Family_Income", 
-        }
 
         # Geo query. We are going for the tract level
         geo = [f"in=state:{block['STATEFP']}", 
                f"in=county:{block['COUNTYFP']}",
                f"for=tract:{block['TRACTCE']}"]
 
-        df = self.query_census_api(fields_of_interest, geo, dataset=dataset, year=year)
-        
-        # df = pd.DataFrame(census_response[1:], columns = census_response[0])
-        # df = df.rename(fields_of_interest, axis="columns")
-        
+        df = self.query_census_api(self.acs5_fields_of_interest, geo, dataset=dataset, year=year)
+        df = self.add_computed_variables(df)
+
         return {**df.T[0].to_dict(), **block}
 
     def details_all_tracts(self, STATEFP, COUNTYFP):
@@ -227,28 +277,25 @@ class Census:
         dataset='acs/acs5'
         year='2017'
 
-        fields_of_interest = {
-            'B07001_017E': "Same_house_1_year_ago",
-            'B07001_001E': "Total_Population",
-            # https://api.census.gov/data/2017/acs/acs5/groups/B19127.html
-            'B19127_001E': "Aggregate_Income",             
-            'B19126_001E': "Median_Family_Income", 
-        }
-
-        # Geo query. We are going for the tract level
+        # Geo query. We are going for the tract level. In principle
+        # we could got for the block group level as well, but often the 
+        # variables of interest are not available at that level of detail
         geo = [f"in=state:{STATEFP}", 
                f"in=county:{COUNTYFP}",
                f"for=tract:*"]
 
-        df = self.query_census_api(fields_of_interest, geo, dataset=dataset, year=year)
+        df = self.query_census_api(self.acs5_fields_of_interest, geo, dataset=dataset, year=year)
+        df = self.add_computed_variables(df)
         
-        # df = pd.DataFrame(census_response[1:], columns = census_response[0])
-        # df = df.rename(fields_of_interest, axis="columns")
+        for column in df.columns:
+            if column in ('NAME', 'state', 'county', 'tract'):
+                continue
+            df[column+'_percentile'] = df[column].rank(pct=True)        
         
         return df    
     
 
-    def query_census_api(self, fields_of_interest, geo, year='2018', dataset='acs', debug=False):
+    def query_census_api(self, fields_of_interest, geo, year='2018', dataset='acs/acs5', debug=False):
         fields = ['NAME'] + list(fields_of_interest.keys())
         
         base_url = f'https://api.census.gov/data/{year}/{dataset}?key={self.census_key}&get='
@@ -264,5 +311,9 @@ class Census:
         
         df = pd.DataFrame(data[1:], columns = data[0])
         df = df.rename(fields_of_interest, axis="columns")
+        for column in df.columns:
+            if column in ('NAME', 'state', 'county', 'tract'):
+                continue
+            df[column] = pd.to_numeric(df[column])          
 
         return df
