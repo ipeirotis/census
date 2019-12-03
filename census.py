@@ -292,7 +292,9 @@ class Census:
         # variables of interest are not available at that level of detail
         geo = [f"in=state:{STATEFP}", 
                f"in=county:{COUNTYFP}",
-               f"for=tract:*"]
+               f"for=tract:*",
+               # f"for=block group:*"
+              ]
 
         df = self.query_census_api(self.acs5_fields_of_interest, geo, dataset=dataset, year=year)
         
