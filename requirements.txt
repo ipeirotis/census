@@ -1,4 +1,7 @@
 requests
 pandas 
 flask
-googleapiclient
+
+# To restart the GCloud instance
+google-api-python-client
+oauth2client
