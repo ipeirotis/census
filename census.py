@@ -1,5 +1,6 @@
 import requests
 import pandas as pd
+import numpy as np
 
 class GeoLocator:
     
@@ -183,13 +184,22 @@ class Census:
         'B25038_004E': 'Owner_Moved_in_2010_to_2014',
         'B25038_003E': 'Owner_Moved_in_2015_or_later',
         
-        'B19019_002E': '1-person_households',
-        'B19019_003E': '2-person_households',
-        'B19019_004E': '3-person_households',
-        'B19019_005E': '4-person_households',
-        'B19019_006E': '5-person_households',
-        'B19019_007E': '6-person_households',
-        'B19019_008E': '7-or-more-person_households',        
+        'B11016_002E': 'Family_households',
+        'B11016_003E': 'Family_households_2person',
+        'B11016_004E': 'Family_households_3person',
+        'B11016_005E': 'Family_households_4person',
+        'B11016_006E': 'Family_households_5person',
+        'B11016_007E': 'Family_households_6person',
+        'B11016_008E': 'Family_households_7_or_more',
+        
+        'B11016_009E': 'NonFamily_households',
+        'B11016_010E': 'NonFamily_households_1person',
+        'B11016_011E': 'NonFamily_households_2person',
+        'B11016_012E': 'NonFamily_households_3person',
+        'B11016_013E': 'NonFamily_households_4person',
+        'B11016_014E': 'NonFamily_households_5person',
+        'B11016_015E': 'NonFamily_households_6person',
+        'B11016_016E': 'NonFamily_households_7_or_more',        
         
     }
 
@@ -256,7 +266,7 @@ class Census:
         return df
         
         
-    def details_tract_level(self, address):
+    def details_tract_level(self, address, debug=False):
         
         block = self.geolocator.get_census_block(address)      
         dataset='acs/acs5'
@@ -267,7 +277,7 @@ class Census:
                f"in=county:{block['COUNTYFP']}",
                f"for=tract:{block['TRACTCE']}"]
 
-        df = self.query_census_api(self.acs5_fields_of_interest, geo, dataset=dataset, year=year)
+        df = self.query_census_api(self.acs5_fields_of_interest, geo, dataset=dataset, year=year, debug=debug)
         df = self.add_computed_variables(df)
 
         return {**df.T[0].to_dict(), **block}
@@ -285,12 +295,15 @@ class Census:
                f"for=tract:*"]
 
         df = self.query_census_api(self.acs5_fields_of_interest, geo, dataset=dataset, year=year)
+        
+
         df = self.add_computed_variables(df)
         
         for column in df.columns:
             if column in ('NAME', 'state', 'county', 'tract'):
                 continue
             df[column+'_percentile'] = df[column].rank(pct=True)        
+        
         
         return df    
     
@@ -310,10 +323,14 @@ class Census:
         data = response.json()
         
         df = pd.DataFrame(data[1:], columns = data[0])
-        df = df.rename(fields_of_interest, axis="columns")
-        for column in df.columns:
+        for column in df.columns.values:
             if column in ('NAME', 'state', 'county', 'tract'):
                 continue
-            df[column] = pd.to_numeric(df[column])          
+            df[column] = pd.to_numeric(df[column], errors='ignore')          
 
+        df = df.rename(fields_of_interest, axis="columns")
+
+        # Replacing missing values with proper NaN
+        df = df.replace(to_replace=-666666666,value=np.nan, method=None)
+        
         return df
