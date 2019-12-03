@@ -241,10 +241,7 @@ class Census:
             'H013005': "4_person_household",
             'H013006': "5_person_household",
             'H013007': "6_person_household",
-            'H013008': "7plus_person_household",
-
-
-            
+            'H013008': "7plus_person_household"       
         }
 
         # Geo query. We are going for the block level, no wildcards
@@ -263,6 +260,20 @@ class Census:
         df["prob_move"] = 1-df["Same_house_1_year_ago"]/df["Total_Population"]
         df["prob_move_owner"] = 1-df["Same_house_1_year_ago_owner"]/df["Owner"]
         df["prob_move_renter"] = 1-df["Same_house_1_year_ago_renter"]/df["Renter"]
+        df["prob_move_renter"] = 1-df["Same_house_1_year_ago_renter"]/df["Renter"]
+        df["aux_women_birth"] = df["Women_No_Birth_Last_Year"]+df["Women_Gave_Birth_Last_Year"]
+        df["prob_woman_gave_birth"] = df["Women_Gave_Birth_Last_Year"] / df["aux_women_birth"]
+        df["aux_owner_moved"] = df['Owner_Moved_in_1979_or_earlier'] + df['Owner_Moved_in_1980_to_1989'] + df['Owner_Moved_in_1990_to_1999'] + df['Owner_Moved_in_2000_to_2009'] + df['Owner_Moved_in_2010_to_2014'] + df['Owner_Moved_in_2015_or_later']
+
+        df["prob_owner_moved_before1979"] = df['Owner_Moved_in_1979_or_earlier'] / df["aux_owner_moved"]
+        df["prob_owner_moved_1980_to_1989"] = df['Owner_Moved_in_1980_to_1989'] / df["aux_owner_moved"]
+        df["prob_owner_moved_1990_to_1999"] = df['Owner_Moved_in_1990_to_1999'] / df["aux_owner_moved"]
+        df["prob_owner_moved_2000_to_2009"] = df['Owner_Moved_in_2000_to_2009'] / df["aux_owner_moved"]
+        df["prob_owner_moved_2010_to_2014"] = df['Owner_Moved_in_2010_to_2014'] / df["aux_owner_moved"]
+        df["prob_owner_moved_2015_or_later"] = df['Owner_Moved_in_2015_or_later'] / df["aux_owner_moved"]
+        
+        df.drop(["aux_women_birth", "aux_owner_moved"], axis='columns', inplace=True)
+        
         return df
         
         
