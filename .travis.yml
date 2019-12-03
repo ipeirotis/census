@@ -10,7 +10,7 @@ addons:
 install:
 - pip3 install -r requirements.txt
 script:
-- echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+- echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
 - docker build -t ipeirotis/census .
 - docker push ipeirotis/census
   # - python3 restart_vm.py
