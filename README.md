@@ -11,3 +11,6 @@ This microservice provides a curated access to the underlying census information
 
 * The service runs at `census.ipeirotis.com` port 5000.
 
+* Encryped the client-secrets file by logging to travis using the command:
+    * `travis login --org --github-token [GITHUB TOKEN FOR LOGIN]"
+    * `travis encrypt-file google-cloud-credentials.json --add --pro` 
